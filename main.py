@@ -2,45 +2,42 @@ import platform
 import psutil
 import tkinter as tk
 from tkinter import ttk
+import psutil
+import platform
+from datetime import datetime
+import socket
+import uuid
+import re
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
     
         self.title('Hardware and Software Analyzer')
-        # window size
+
         window_w = 600
         window_h = 400
 
-        # get the screen dimension
         screen_w = self.winfo_screenmmwidth()
         screen_h = self.winfo_screenmmheight()
 
-        # find center point
         center_x = int(screen_w)
         center_y = int(screen_h)
 
-        #size and position of a window
         self.geometry(f'{window_w}x{window_h}+{center_x}+{center_y}')
 
-        # initialize data
-        self.options = ('System', 'CPU', 'GPU', 'RAM', 'Drives')
+        self.options = ('System', 'CPU', 'GPU', 'RAM', 'Network')
 
-        # set up variable
         self.option_var = tk.StringVar(self)
 
-        # create widget
         self.create_wigets()
 
     def create_wigets(self):
-        # padding for widgets using the grid layout
         paddings = {'padx': 5, 'pady': 5}
 
-        # label
         label = ttk.Label(self)
         label.grid(column=0, row=0, sticky=tk.W, **paddings)
 
-        # option menu
         option_menu = ttk.OptionMenu(
             self,
             self.option_var,
@@ -48,15 +45,47 @@ class App(tk.Tk):
             *self.options)
 
         option_menu.grid(column=1, row=0, sticky=tk.W, **paddings)
+    
+    def get_size(bytes, suffix="B"):
+        """
+        Scale bytes to its proper format
+            1253656 => '1.20MB'
+            1253656678 => '1.17GB'
+        """
+        factor = 1024
+        for unit in ["", "K", "M", "G", "T", "P"]:
+            if bytes < factor:
+                return f"{bytes:.2f}{unit}{suffix}"
+            bytes /= factor
 
-    def sysinfo():
-        system_info = {
-            "Operating system" : platform.system(),
+    def system():
+        system_data = {
             "Network name " : platform.node(),
-            "Architecture name" : platform.architecture()
+            "Operating system" : platform.system(),
+            "Version" : platform.version(),
+            "Machine" : platform.machine(),
+            "Architecture" : platform.architecture(),
+            "Ip-Address" : socket.gethostbyname(socket.gethostname()),
+            "Mac-Address" : {':'.join(re.findall('..', '%012x' % uuid.getnode()))}
         }
-        return system_info
+        return system_data
 
+    def ram():
+        svmem = psutil.virtual_memory()
+        ram_data = {
+            "Total" : get_size(svmem.total),
+            "Available" : get_size(svmem.available),
+            "Used" : get_size(svmem.used),
+            "Percentage" : f"{svmem.percent}%"
+        }
+        return ram_data
+
+    def disk():
+        partitions = psutil.disk_partitions()
+        pass
+
+    def gpu():
+        pass
 
 
 if __name__ == "__main__":
