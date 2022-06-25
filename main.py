@@ -1,15 +1,13 @@
+
 import platform
 import psutil
 import tkinter as tk
 from tkinter import ttk
 import psutil
 import platform
-from datetime import datetime
 import socket
 import uuid
 import re
-
-from setuptools import Command
 
 class App(tk.Tk):
     def __init__(self):
@@ -28,31 +26,6 @@ class App(tk.Tk):
 
         self.geometry(f'{window_w}x{window_h}+{center_x}+{center_y}')
 
-        self.options = ('System', 'CPU', 'GPU', 'RAM', 'Network')
-
-        self.option_var = tk.StringVar(self)
-
-        self.create_wigets()
-
-    def create_wigets(self):
-        paddings = {'padx': 5, 'pady': 5}
-
-        label = ttk.Label(self)
-        label.grid(column=0, row=0, sticky=tk.W, **paddings)
-
-        option_menu = ttk.OptionMenu(
-            self,
-            self.option_var,
-            self.options[0],
-            *self.options,
-            command=self.option_changed
-            )
-
-        option_menu.grid(column=1, row=0, sticky=tk.W, **paddings)
-    
-    def option_changed(self, *args):
-        pass
-    
     def get_size(bytes, suffix="B"):
         """
         Scale bytes to its proper format
