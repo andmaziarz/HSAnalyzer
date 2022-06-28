@@ -1,32 +1,12 @@
-
 import platform
 import psutil
-import tkinter as tk
-from tkinter import ttk
 import psutil
 import platform
 import socket
 import uuid
 import re
 
-class App(tk.Tk):
-    def __init__(self):
-        super().__init__()
-    
-        self.title('Hardware and Software Analyzer')
-
-        window_w = 600
-        window_h = 400
-
-        screen_w = self.winfo_screenmmwidth()
-        screen_h = self.winfo_screenmmheight()
-
-        center_x = int(screen_w)
-        center_y = int(screen_h)
-
-        self.geometry(f'{window_w}x{window_h}+{center_x}+{center_y}')
-
-    def get_size(bytes, suffix="B"):
+def get_size(bytes, suffix="B"):
         """
         Scale bytes to its proper format
             1253656 => '1.20MB'
@@ -37,6 +17,9 @@ class App(tk.Tk):
             if bytes < factor:
                 return f"{bytes:.2f}{unit}{suffix}"
             bytes /= factor
+class App():
+    def __init__(self):
+        pass
 
     def System():
         system_data = {
@@ -46,40 +29,68 @@ class App(tk.Tk):
             "Machine" : platform.machine(),
             "Architecture" : platform.architecture(),
             "Ip-Address" : socket.gethostbyname(socket.gethostname()),
-            "Mac-Address" : {':'.join(re.findall('..', '%012x' % uuid.getnode()))}
+            "Mac-Address" : ':'.join(re.findall('..', '%012x' % uuid.getnode()))
         }
-        print(system_data)
+        for key, value in system_data.items():
+            print( key, ":", value)
 
     def CPU():
+        print(f"Processor type: {platform.processor()}")
+        print("Physical cores:", psutil.cpu_count(logical=False))
+        print("Total cores:", psutil.cpu_count(logical=True))
         cpufreq = psutil.cpu_freq()
-        cpu_data = {
-            "Physical cores" : psutil.cpu_count(logical=False),
-            "Total cores" : psutil.cpu_count(logical=True),
-            "Max Frequency" : f"{cpufreq.max:.2f}Mhz",
-            "Min Frequency" : f"{cpufreq.min:.2f}Mhz",
-            "Current Frequency" : f"{cpufreq.current:.2f}Mhz",
-            "Total CPU Usage" : f"{psutil.cpu_percent()}%"
-        }
-        print(cpu_data)
+        print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
+        print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
+        print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
+        print("CPU Usage Per Core:")
+
+        for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
+            print(f"Core {i}: {percentage}%")
+
+        print(f"Total CPU Usage: {psutil.cpu_percent()}%")
 
     def RAM():
         svmem = psutil.virtual_memory()
-        ram_data = {
-            "Total" : get_size(svmem.total),
-            "Available" : get_size(svmem.available),
-            "Used" : get_size(svmem.used),
-            "Percentage" : f"{svmem.percent}%"
-        }
-        print(ram_data)
+        print(f"Total: {get_size(svmem.total)}")
+        print(f"Available: {get_size(svmem.available)}")
+        print(f"Used: {get_size(svmem.used)}")
+        print(f"Percentage: {svmem.percent}%")
 
     def DISK():
         partitions = psutil.disk_partitions()
-        pass
 
-    def GPU():
-        pass
+        for partition in partitions:
+            print(f"=== Device: {partition.device} ===")
+            print(f"  Mountpoint: {partition.mountpoint}")
+            print(f"  File system type: {partition.fstype}")
+            try:
+                partition_usage = psutil.disk_usage(partition.mountpoint)
+            except PermissionError:
+                continue
+            print(f"  Total Size: {get_size(partition_usage.total)}")
+            print(f"  Used: {get_size(partition_usage.used)}")
+            print(f"  Free: {get_size(partition_usage.free)}")
+            print(f"  Percentage: {partition_usage.percent}%\n")
 
+        disk_io = psutil.disk_io_counters()
+        print(f"Total read: {get_size(disk_io.read_bytes)}")
+        print(f"Total write: {get_size(disk_io.write_bytes)}")
 
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    def Network():
+        if_addrs = psutil.net_if_addrs()
+
+        for interface_name, interface_addresses in if_addrs.items():
+            for address in interface_addresses:
+                print(f"=== Interface: {interface_name} ===")
+                if str(address.family) == 'AddressFamily.AF_INET':
+                    print(f"  IP Address: {address.address}")
+                    print(f"  Netmask: {address.netmask}")
+                    print(f"  Broadcast IP: {address.broadcast}")
+                elif str(address.family) == 'AddressFamily.AF_PACKET':
+                    print(f"  MAC Address: {address.address}")
+                    print(f"  Netmask: {address.netmask}")
+                    print(f"  Broadcast MAC: {address.broadcast}")
+
+        net_io = psutil.net_io_counters()
+        print(f"Total Bytes Sent: {get_size(net_io.bytes_sent)}")
+        print(f"Total Bytes Received: {get_size(net_io.bytes_recv)}")
